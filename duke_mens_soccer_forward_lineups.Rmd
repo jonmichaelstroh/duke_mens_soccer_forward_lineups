@@ -1,0 +1,95 @@
+---
+title: "Duke Men's Soccer Forward Lineups"
+author: '@jonmichaelstroh'
+date: "10/6/2021"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, 
+                      echo = TRUE, dpi = 300, cache.lazy = FALSE,
+                      tidy = "styler")
+```
+
+```{r include = FALSE}
+library(tidyverse)
+library(broom)
+library(knitr)
+library(readxl)
+library(patchwork)
+library(Stat2Data)
+library(yardstick)
+```
+
+```{r include = FALSE}
+duke_mens_soccer_forward_lineups <- read_excel("duke_mens_soccer_forward_data/duke_mens_soccer_forward_lineups.xlsx")
+```
+
+A quick analysis of Duke Men's Soccer forward combinations over there 6 game win streak between Sept 11 and Oct 5 2021.
+
+#### Data Manipulation
+
+```{r}
+duke_mens_soccer_forward_lineups <- duke_mens_soccer_forward_lineups %>% 
+  mutate(Min = (MinE - MinS)) %>% mutate(tandem = paste(FWD1,"-",FWD2))
+```
+
+```{r}
+duke_mens_soccer_forward_lineups %>% count(tandem) %>% arrange(desc(n))
+```
+
+## Create different efficiency metrics
+```{r}
+duke_forward_lineups_over50 <- duke_mens_soccer_forward_lineups %>% 
+  group_by(tandem) %>% 
+  summarise_at(vars(Min, GoalsT, FWD1G, FWD2G), list(Total = sum)) %>% 
+  arrange(desc(Min_Total)) %>% filter(Min_Total >= 50)
+
+duke_forward_lineups_over50 <- duke_forward_lineups_over50 %>%
+  mutate(goal_percent_scored = (FWD1G_Total + FWD2G_Total)/ GoalsT_Total)
+
+duke_forward_lineups_over50[is.na(duke_forward_lineups_over50)] <- 0
+
+duke_forward_lineups_over50 <- duke_forward_lineups_over50 %>% 
+  mutate(goals_per90 = (90 * GoalsT_Total)/Min_Total)
+```
+
+```{r}
+d <- ggplot(duke_forward_lineups_over50, aes(x = Min_Total, y = goals_per90, label = tandem))
+
+d + geom_point(color = "#00539B", size = 7) + 
+  geom_text(hjust=-0.25 , vjust=-0.25, color = "#00539B", size = 4.25) + 
+  ylim(0, 5) + 
+  xlim(0, 350) + 
+  ggtitle("Duke Men's Soccer Forward Combos 2021 (Last 6 Games)") + 
+  theme(panel.background = element_rect(fill = "lightblue",
+                                colour = "lightblue",
+                                size = 0.5, linetype = "solid"),
+  
+        panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                colour = "white"), 
+  
+        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                colour = "white"), plot.background = element_rect(fill = "#D3D3D3"), plot.title = element_text(color="#00539B", face="bold"),
+axis.title.x = element_text(color="#00539B", size=14, face="bold"),
+axis.title.y = element_text(color="#00539B", size=14, face="bold")
+  ) + 
+  xlab("Total Minutes Played") + ylab("Goals Produced per 90 Min")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
